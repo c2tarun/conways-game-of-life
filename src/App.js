@@ -69,6 +69,16 @@ function App() {
         return aliveCount;
     };
 
+    const reset = () => {
+        clearInterval(autoProgress);
+        setAutoEnabled(false);
+        let newBoard = new Array(row);
+        for (var i = 0; i < row; i++) {
+            newBoard[i] = Array.from(Array(col), () => false);
+        }
+        setBoard(newBoard);
+    };
+
     const wrapSafe = (v) => {
         if (v < 0) {
             return size + v;
@@ -132,6 +142,7 @@ function App() {
                         Stop
                     </button>
                 )}
+                <button onClick={reset}>Reset</button>
             </div>
         </div>
     );
