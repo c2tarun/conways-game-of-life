@@ -1,12 +1,15 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Cell from "./Cell";
 import Row from "./Row";
 
 function App() {
-    const size = 100;
+    const size = 75;
     const row = size;
     const col = size;
     const [board, setBoard] = useState();
+    const [autoProgress, setAutoProgress] = useState();
+    const [autoEnabled, setAutoEnabled] = useState(false);
+    const savedCallback = useRef();
 
     useEffect(() => {
         let newBoard = new Array(row);
@@ -15,6 +18,10 @@ function App() {
         }
         setBoard(newBoard);
     }, []);
+
+    useEffect(() => {
+        savedCallback.current = progressTime;
+    }, [board]);
 
     const toggle = (r, c) => {
         let newBoard = new Array(row);
@@ -49,16 +56,33 @@ function App() {
     };
 
     const getAliveNeighborCount = (r, c) => {
-        if (!board) return 0;
         let aliveCount = 0;
         for (var i = r - 1; i <= r + 1; i++) {
             for (var j = c - 1; j <= c + 1; j++) {
-                if (i < 0 || j < 0 || i >= size || j >= size) continue;
+                let c_i = dontWrap(i);
+                let c_j = dontWrap(j);
+
                 if (i === r && j === c) continue;
-                if (board[i][j]) aliveCount++;
+                if (board[c_i][c_j]) aliveCount++;
             }
         }
         return aliveCount;
+    };
+
+    const wrapSafe = (v) => {
+        if (v < 0) {
+            return size + v;
+        }
+        if (v >= size) {
+            return v % size;
+        }
+        return v;
+    };
+
+    const dontWrap = (v) => {
+        if (v < 0) return 0;
+        if (v >= size) return size - 1;
+        return v;
     };
 
     const renderBoard = () => {
@@ -70,14 +94,7 @@ function App() {
             let singleRow = [];
             for (var j = 0; j < col; j++) {
                 singleRow.push(
-                    <Cell
-                        key={`${i},${j}`}
-                        row={i}
-                        col={j}
-                        toggle={toggle}
-                        alive={board[i][j]}
-                        aliveNCount={getAliveNeighborCount(i, j)}
-                    />
+                    <Cell key={`${i},${j}`} row={i} col={j} toggle={toggle} alive={board[i][j]} />
                 );
             }
             rows.push(<Row key={`${i}`}>{singleRow}</Row>);
@@ -88,7 +105,34 @@ function App() {
     return (
         <div>
             {renderBoard()}
-            <button onClick={progressTime}>Next</button>
+            <div style={{ margin: 10 }}>
+                <button onClick={progressTime}>Next</button>
+                {!autoEnabled && (
+                    <button
+                        onClick={() => {
+                            let timer = setInterval(() => {
+                                savedCallback.current();
+                            }, 50);
+                            setAutoProgress(timer);
+                            setAutoEnabled(true);
+                        }}
+                        disabled={autoEnabled}
+                    >
+                        Start
+                    </button>
+                )}
+                {autoEnabled && (
+                    <button
+                        onClick={() => {
+                            clearInterval(autoProgress);
+                            setAutoEnabled(false);
+                        }}
+                        disabled={!autoEnabled}
+                    >
+                        Stop
+                    </button>
+                )}
+            </div>
         </div>
     );
 }
